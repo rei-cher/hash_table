@@ -7,8 +7,11 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 
 #include "hash_table.h"
+
+#define RANDOM_PREDEFINED_NUMBER 41
 
 // struct that holds a key data pair and a pointer to the next node in the chain
 typedef struct node_t
@@ -28,7 +31,7 @@ typedef struct hash_table
 } hash_table_t;
 
 // TODO: static function prototypes here
-static uint32_t hash_key(char * p_key);
+static uint32_t hash_key(char * p_key, uint32_t size);
 
 hash_table_t * hash_table_init(uint32_t size, free_f p_free)
 {
@@ -74,14 +77,7 @@ int hash_table_add(hash_table_t * p_table, void * p_data, char * p_key)
 		goto END;
 	}
 
-	uint32_t p_key_val = hash_key(p_key);
-
-	uint32_t bucket_index = p_key_val % p_table->num_buckets;
-
-	if (NULL == new_node)
-	{
-		goto END;
-	}
+	uint32_t p_key_val = hash_key(p_key, p_table->num_buckets);
 
 	node_t * new_node = calloc(1, sizeof(* new_node));
 
@@ -93,8 +89,8 @@ int hash_table_add(hash_table_t * p_table, void * p_data, char * p_key)
 	new_node->p_data = p_data;
 	new_node->p_key = p_key;
 
-	new_node->p_next = p_table->pp_table[bucket_index];
-	p_table->pp_table[bucket_index] = new_node;
+	new_node->p_next = p_table->pp_table[p_key_val];
+	p_table->pp_table[p_key_val] = new_node;
 
 	p_table->num_nodes++;
 
@@ -106,9 +102,19 @@ END:
 
 void * hash_table_lookup(hash_table_t * p_table, char * p_key)
 {
-    (void)p_table;
-    (void)p_key;
-    return NULL;
+	void * result = NULL;
+
+	if ((NULL == p_table) ||
+		(NULL == p_key))
+	{
+		goto END;
+	}
+
+	uint32_t p_key_val = hash_key(p_key, p_table->num_buckets);
+
+	result = p_table->pp_table[p_key_val]->p_key->p_data;
+END:
+	return result;
 }
 
 int hash_table_remove(hash_table_t * p_table, char * p_key)
@@ -130,26 +136,27 @@ void hash_table_destroy(hash_table_t ** pp_table)
 }
 
 // TODO: static function definitions here
-static uint32_t hash_key(char * p_key)
+static uint32_t hash_key(char * p_key, uint32_t size)
 {
-	char * p_end = NULL;
 	unsigned long long result = 0ULL;
+	unsigned int index = 0;
 
 	if (NULL == p_key)
 	{
 		goto END;
 	}
 	
-	result = strtoul(p_key, &p_end, 10);
-	if ('\0' == * p_end)
+	unsigned int key_len = strlen(p_key);
+
+	for (index; index < key_len; index++)
 	{
-		result = 0ULL;
-		goto END;
+		result = result * RANDOM_PREDEFINED_NUMBER + p_key[index];
 	}
+
+	result = result % size;
 
 END:
 	return result;
-
 }
 
 // end of hash_table.c
