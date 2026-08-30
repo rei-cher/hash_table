@@ -28,7 +28,7 @@ typedef struct hash_table
     free_f    p_free;      // frees data stored in the hash table
     uint32_t  num_buckets; // number of buckets used in the hash table
     uint32_t  num_nodes;   // number of nodes currently in the hash table
-} hash_table_t;
+};
 
 // TODO: static function prototypes here
 static uint32_t hash_key(char * p_key, uint32_t size);
@@ -69,28 +69,40 @@ END:
 int hash_table_add(hash_table_t * p_table, void * p_data, char * p_key)
 {
 	int SUCCESS = 1;
+	node_t * p_current = NULL;
 
 	if ((NULL == p_table) ||
-		(NULL == p_data) ||
 		(NULL == p_key))
 	{
 		goto END;
 	}
 
-	uint32_t p_key_val = hash_key(p_key, p_table->num_buckets);
+	uint32_t key_val = hash_key(p_key, p_table->num_buckets);
 
-	node_t * new_node = calloc(1, sizeof(* new_node));
+	p_current = p_table->pp_table[key_val];
 
-	if (NULL == new_node)
+	while (NULL != p_current)
+	{
+		if (0 == strcmp(p_current->p_key, p_key))
+		{
+			goto END;
+		}
+
+		p_current = p_current->p_next;
+	}
+
+	node_t * p_new_node = calloc(1, sizeof(* p_new_node));
+
+	if (NULL == p_new_node)
 	{
 		goto END;
 	}
 
-	new_node->p_data = p_data;
-	new_node->p_key = p_key;
+	p_new_node->p_data = p_data;
+	p_new_node->p_key = p_key;
 
-	new_node->p_next = p_table->pp_table[p_key_val];
-	p_table->pp_table[p_key_val] = new_node;
+	p_new_node->p_next = p_table->pp_table[key_val];
+	p_table->pp_table[key_val] = p_new_node;
 
 	p_table->num_nodes++;
 
@@ -110,18 +122,77 @@ void * hash_table_lookup(hash_table_t * p_table, char * p_key)
 		goto END;
 	}
 
-	uint32_t p_key_val = hash_key(p_key, p_table->num_buckets);
+	uint32_t key_val = hash_key(p_key, p_table->num_buckets);
 
-	result = p_table->pp_table[p_key_val]->p_key->p_data;
+	node * p_current = p_table->pp_table[key_val];
+	
+	while (NULL != p_current)
+	{
+		if (0 == strcmp(p_current->p_key, p_key))
+		{
+			result = p_current->p_data;
+			goto END;
+		}
+
+		p_current = p_current->p_next;
+	}
+
 END:
 	return result;
 }
 
 int hash_table_remove(hash_table_t * p_table, char * p_key)
 {
-    (void)p_table;
-    (void)p_key;
-    return EXIT_FAILURE;
+	int SUCCESS = 1;
+	node_t * p_prev = NULL;
+
+	if ((NULL == p_table) ||
+		(NULL == p_key))
+	{
+		goto END;
+	}
+
+	uint32_t key_val = hash_key(p_key, p_table->num_buckets);
+
+	node_t * p_current = p_table->pp_table[key_val];
+
+	while (NULL != p_current)
+	{
+		if (0 != strcmp(p_current->p_key, p_key))
+		{
+			p_prev = p_current;
+			p_current = p_current->p_next;
+			continue;
+		}
+
+		if (NULL == p_prev)
+		{
+			p_table->pp_table[key_val] = p_current->p_next;
+		}
+
+		if (NULL != p_prev)
+		{
+			p_prev->p_next = p_current->p_next;
+		}
+
+		if ((NULL != p_table->p_free) &&
+			(NULL != p_current->p_data))
+		{
+			p_table->p_free(p_current->p_data);
+		}
+
+		free(p_current);
+		p_current = NULL;
+
+		p_table->num_nodes--;
+		SUCCESS = 0;
+		
+		goto END;
+	}
+
+
+END:
+	return SUCCESS;
 }
 
 int hash_table_clear(hash_table_t * p_table)
