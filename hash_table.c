@@ -31,7 +31,23 @@ typedef struct hash_table
 };
 
 // TODO: static function prototypes here
+/**
+ * @brief Calcualtes an unique integer as a key for the specific key
+ *
+ * @param p_key
+ * @param size
+ *
+ * @return Unsigned 32 bit key
+ */
 static uint32_t hash_key(char * p_key, uint32_t size);
+
+/**
+ * @brief Clears the linked list chain
+ *
+ * @param p_node
+ * @param p_free
+ */
+static void clear_chain(node_t * p_node, free_f p_free);
 
 hash_table_t * hash_table_init(uint32_t size, free_f p_free)
 {
@@ -205,10 +221,13 @@ int hash_table_clear(hash_table_t * p_table)
 		goto END;
 	}
 
-	for(;index < p_table->num_buckets; index++)
+	for(index; index < p_table->num_buckets; index++)
 	{
-		p_table->p_free(p_table->pp_table[index]);
+		clear_chain(p_table->pp_table[index], p_table->p_free);
+		p_table->pp_table[index] = NULL;
 	}
+
+	p_table->num_nodes = 0;
 
 	SUCCESS = 0;
 
@@ -264,4 +283,30 @@ END:
 	return result;
 }
 
+static void clear_chain(node_t * p_node, free_f p_free)
+{
+	if (NULL == p_node)
+	{
+		goto END;
+	}
+
+	node_t * p_next = NULL;
+
+	while (NULL != p_node)
+	{
+		p_next = p_node->p_next;
+
+		if ((NULL != p_free) &&
+			(NULL != p_node->p_data))
+		{
+			p_free(p_node->p_data);
+		}
+
+		free(p_node);
+		p_node = p_next;
+	}
+
+END:
+	return;
+}
 // end of hash_table.c
