@@ -124,7 +124,7 @@ void * hash_table_lookup(hash_table_t * p_table, char * p_key)
 
 	uint32_t key_val = hash_key(p_key, p_table->num_buckets);
 
-	node * p_current = p_table->pp_table[key_val];
+	node_t * p_current = p_table->pp_table[key_val];
 	
 	while (NULL != p_current)
 	{
@@ -197,13 +197,47 @@ END:
 
 int hash_table_clear(hash_table_t * p_table)
 {
-    (void)p_table;
-    return EXIT_FAILURE;
+	int SUCCESS = 1;
+	int index = 0;
+
+	if (NULL == p_table)
+	{
+		goto END;
+	}
+
+	for(;index < p_table->num_buckets; index++)
+	{
+		p_table->p_free(p_table->pp_table[index]);
+	}
+
+	SUCCESS = 0;
+
+END:
+	return SUCCESS;
 }
 
 void hash_table_destroy(hash_table_t ** pp_table)
 {
-    (void)pp_table;
+	if ((NULL == * pp_table) ||
+		(NULL == pp_table))
+	{
+		goto END;
+	}
+
+	hash_table_clear(* pp_table);
+
+	if (NULL != (* pp_table)->pp_table)
+	{
+		free((* pp_table)->pp_table);
+		(* pp_table)->pp_table = NULL;
+	}
+
+	free(*pp_table);
+	* pp_table = NULL;
+	
+END:
+	return;
+
 }
 
 // TODO: static function definitions here
