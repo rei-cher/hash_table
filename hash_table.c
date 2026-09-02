@@ -87,6 +87,8 @@ int hash_table_add(hash_table_t * p_table, void * p_data, char * p_key)
 	int SUCCESS = 1;
 	node_t * p_current = NULL;
 
+	//p_data can be NULL by requirements, so no need to check
+	//if the pointer is NULL (?) against BARR-C
 	if ((NULL == p_table) ||
 		(NULL == p_key))
 	{
@@ -237,8 +239,8 @@ END:
 
 void hash_table_destroy(hash_table_t ** pp_table)
 {
-	if ((NULL == * pp_table) ||
-		(NULL == pp_table))
+	if ((NULL == pp_table) ||
+		(NULL == * pp_table))
 	{
 		goto END;
 	}
